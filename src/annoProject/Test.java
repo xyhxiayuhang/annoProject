@@ -22,9 +22,14 @@ public class Test {
 		System.out.println(sql1);
 		System.out.println(sql2);
 		System.out.println(sql3);
+
+		Filter2 filter2 = new Filter2();
+		filter2.setAmount(20);
+		filter2.setName("技术部");
+		System.out.println(query(filter2));
 	}
 
-	private static String query(Filter f) {
+	private static String query(Object f) {
 		StringBuilder sb = new StringBuilder();
 		// 1.获取到class
 		Class c = f.getClass();
@@ -35,7 +40,7 @@ public class Test {
 		}
 		Table t = (Table) c.getAnnotation(Table.class);
 		String tableName = t.value();
-		sb.append("select * from ").append(tableName).append("where 1=1");
+		sb.append("select * from ").append(tableName).append(" where 1=1");
 		// 3.遍历所有的字段
 		Field[] fArray = c.getDeclaredFields();
 		for (Field field : fArray) {
@@ -58,7 +63,25 @@ public class Test {
 				e.printStackTrace();
 			}
 			// 4.3拼装sql
-			sb.append(" and ").append(fieldName).append("=").append(fieldValue);
+			if (fieldValue == null || (fieldValue instanceof Integer && (Integer) fieldValue == 0)) {
+				continue;
+			}
+			sb.append(" and ").append(fieldName);
+			if (fieldValue instanceof String) {
+				if (((String) fieldValue).contains(",")) {
+					String[] values = ((String) fieldValue).split(",");
+					sb.append(" in(");
+					for (String v : values) {
+						sb.append("'").append(v).append("'").append(",");
+					}
+					sb.deleteCharAt(sb.length() - 1);
+					sb.append(")");
+				} else {
+					sb.append("=").append("'").append(fieldValue).append("'");
+				}
+			} else if (fieldValue instanceof Integer) {
+				sb.append("=").append(fieldValue);
+			}
 		}
 		return sb.toString();
 
